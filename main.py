@@ -13,21 +13,36 @@ def work(url: str):
     driver = webdriver.Chrome(ChromeDriverManager().install())
     driver.get(url)
     driver.implicitly_wait(10)  # ожидание по возможному безействию
-    #
-    categories = ['Брошь-подвес', 'Бусы', 'Подвеска', 'Брошь', 'Браслет', 'Заколка для волос', 'Колье', 'Ожерелья',
-                  'Серьги']
+
+    driver.find_element_by_xpath(
+        "//a[@class='header-mobile-toggle inline-block-item vertical-middle hide-for-xlarge']").click()
+    cats = driver.find_element_by_xpath("//ul[@class='vertical menu mobile-menu-main']").find_elements_by_tag_name('li')
+    categories = [i.text for i in cats]
+
+    driver.find_element_by_link_text(categories[0]).click()
+    driver.find_element_by_xpath(
+        "//a[@class='button filter-mobile-toggle']").click()
+    filters = driver.find_elements_by_xpath("//div[contains(@style,'z-index')]")
+    filters.pop(0)
+    filters.pop(len(filters) - 1)
+
+    names = [i.text for i in filters]  # названия фильтров
+    driver.find_element_by_xpath(
+        "//div[@class='header-logo--mobile-fixed']").click()
+
+    time.sleep(2)
     data = {}  # результат выборки
     for category in categories:
         data[category] = {}
+
         driver.find_element_by_xpath(
             "//a[@class='header-mobile-toggle inline-block-item vertical-middle hide-for-xlarge']").click()
+        time.sleep(2)
 
         driver.find_element_by_link_text(category).click()
 
         driver.find_element_by_xpath(
             "//a[@class='button filter-mobile-toggle']").click()
-
-        names = ['Цвет камня', 'Камень', 'Металл']  # названия фильтров
 
         for name in names:
 
@@ -43,7 +58,7 @@ def work(url: str):
 
             # прожимаем и отжимаем каждый элемент фильтра и заносим адрес страницы во множество
             for elem_1 in container_1:
-                time.sleep(2)
+                time.sleep(3)
                 ActionChains(driver).move_to_element(elem_1).click(elem_1).perform()
                 time.sleep(2)
                 filter_button = driver.find_element_by_xpath(
@@ -51,9 +66,11 @@ def work(url: str):
                 filter_button.send_keys(Keys.CONTROL + Keys.HOME)
                 time.sleep(2)
 
-                filter_button = WebDriverWait(driver, 15).until(
+                WebDriverWait(driver, 15).until(
                     EC.element_to_be_clickable((By.XPATH, "//a[@class='button filter-mobile-toggle']")))
-                filter_button.click()
+                time.sleep(2)
+                filter_button = driver.find_element_by_xpath(
+                    "//a[@class='button filter-mobile-toggle']").click()
                 elem_1_text = elem_1.get_attribute("innerHTML").strip()
 
                 if not elem_1_text in data[category][name].keys():
@@ -62,14 +79,19 @@ def work(url: str):
 
                 print(driver.current_url)
                 ActionChains(driver).move_to_element(elem_1).click(elem_1).perform()
-                time.sleep(2)
+                time.sleep(3)
+                filter_button = driver.find_element_by_xpath(
+                    "//a[@class='button filter-mobile-toggle']")
+                time.sleep(3)
                 filter_button = driver.find_element_by_xpath(
                     "//a[@class='button filter-mobile-toggle']")
                 filter_button.send_keys(Keys.CONTROL + Keys.HOME)
+                time.sleep(1)
                 filter_button = WebDriverWait(driver, 15).until(
                     EC.element_to_be_clickable((By.XPATH, "//a[@class='button filter-mobile-toggle']")))
-                time.sleep(2)
-                filter_button.click()
+                time.sleep(4)
+                filter_button = driver.find_element_by_xpath(
+                    "//a[@class='button filter-mobile-toggle']").click()
 
             time.sleep(2)
             unclick_button = driver.find_element_by_xpath(

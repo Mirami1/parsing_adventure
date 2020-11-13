@@ -13,72 +13,79 @@ def work(url: str):
     driver = webdriver.Chrome(ChromeDriverManager().install())
     driver.get(url)
     driver.implicitly_wait(10)  # ожидание по возможному безействию
-
-    driver.find_element_by_xpath(
-        "//a[@class='header-mobile-toggle inline-block-item vertical-middle hide-for-xlarge']").click()
-
-    driver.find_element_by_link_text('Брошь-подвес').click()
-
-    driver.find_element_by_xpath(
-        "//a[@class='button filter-mobile-toggle']").click()
-
-    names = ['Цвет камня', 'Камень', 'Металл']  # названия фильтров
+    #
+    categories = ['Брошь-подвес', 'Бусы', 'Подвеска', 'Брошь', 'Браслет', 'Заколка для волос', 'Колье', 'Ожерелья',
+                  'Серьги']
     data = {}  # результат выборки
+    for category in categories:
+        data[category] = {}
+        driver.find_element_by_xpath(
+            "//a[@class='header-mobile-toggle inline-block-item vertical-middle hide-for-xlarge']").click()
 
-    for name in names:
+        driver.find_element_by_link_text(category).click()
 
-        data[name] = {}
-        elem = driver.find_element_by_xpath(
-            '//span[text()="{0}"]'.format(name)).find_element_by_xpath('./../..')  # находим название категории фильтра
-        WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, '//span[text()="{0}"]'.format(name))))
-        elem.click()
-        time.sleep(2)
-        checkbox = elem.find_element_by_class_name('checkbox')  # контейнер фильтра
-        container_1 = checkbox.find_elements_by_tag_name("label")  # его элементы
+        driver.find_element_by_xpath(
+            "//a[@class='button filter-mobile-toggle']").click()
 
-        # прожимаем и отжимаем каждый элемент фильтра и заносим адрес страницы во множество
-        for elem_1 in container_1:
+        names = ['Цвет камня', 'Камень', 'Металл']  # названия фильтров
+
+        for name in names:
+
+            data[category][name] = {}
+            elem = driver.find_element_by_xpath(
+                '//span[text()="{0}"]'.format(name)).find_element_by_xpath(
+                './../..')  # находим название категории фильтра
+            WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, '//span[text()="{0}"]'.format(name))))
+            elem.click()
             time.sleep(2)
-            ActionChains(driver).move_to_element(elem_1).click(elem_1).perform()
-            time.sleep(2)
-            filter_button = driver.find_element_by_xpath(
-                "//a[@class='button filter-mobile-toggle']")
-            filter_button.send_keys(Keys.CONTROL + Keys.HOME)
-            time.sleep(2)
-            filter_button = driver.find_element_by_xpath(
-                "//a[@class='button filter-mobile-toggle']")
-            filter_button.click()
-            elem_1_text = elem_1.get_attribute("innerHTML").strip()
+            checkbox = elem.find_element_by_class_name('checkbox')  # контейнер фильтра
+            container_1 = checkbox.find_elements_by_tag_name("label")  # его элементы
 
-            if not elem_1_text in data[name].keys():
-                data[name][elem_1_text] = set()
-            data[name][elem_1_text].add(driver.current_url)
+            # прожимаем и отжимаем каждый элемент фильтра и заносим адрес страницы во множество
+            for elem_1 in container_1:
+                time.sleep(2)
+                ActionChains(driver).move_to_element(elem_1).click(elem_1).perform()
+                time.sleep(2)
+                filter_button = driver.find_element_by_xpath(
+                    "//a[@class='button filter-mobile-toggle']")
+                filter_button.send_keys(Keys.CONTROL + Keys.HOME)
+                time.sleep(2)
 
-            print(driver.current_url)
-            ActionChains(driver).move_to_element(elem_1).click(elem_1).perform()
-            time.sleep(2)
-            filter_button = driver.find_element_by_xpath(
-                "//a[@class='button filter-mobile-toggle']")
-            filter_button.send_keys(Keys.CONTROL + Keys.HOME)
-            filter_button = driver.find_element_by_xpath(
-                "//a[@class='button filter-mobile-toggle']")
-            time.sleep(2)
-            filter_button.click()
+                filter_button = WebDriverWait(driver, 15).until(
+                    EC.element_to_be_clickable((By.XPATH, "//a[@class='button filter-mobile-toggle']")))
+                filter_button.click()
+                elem_1_text = elem_1.get_attribute("innerHTML").strip()
 
-        time.sleep(2)
-        unclick_button = driver.find_element_by_xpath(
-            '//span[text()="{0}"]'.format(name))
-        unclick_button.click()
-        time.sleep(2)
+                if not elem_1_text in data[category][name].keys():
+                    data[category][name][elem_1_text] = set()
+                data[category][name][elem_1_text].add(driver.current_url)
+
+                print(driver.current_url)
+                ActionChains(driver).move_to_element(elem_1).click(elem_1).perform()
+                time.sleep(2)
+                filter_button = driver.find_element_by_xpath(
+                    "//a[@class='button filter-mobile-toggle']")
+                filter_button.send_keys(Keys.CONTROL + Keys.HOME)
+                filter_button = WebDriverWait(driver, 15).until(
+                    EC.element_to_be_clickable((By.XPATH, "//a[@class='button filter-mobile-toggle']")))
+                time.sleep(2)
+                filter_button.click()
+
+            time.sleep(2)
+            unclick_button = driver.find_element_by_xpath(
+                '//span[text()="{0}"]'.format(name))
+            unclick_button.click()
+            time.sleep(2)
 
     data_for_xml = []
 
     # запись данных в xml формат
     for value in data.values():
         for value_1 in value.values():
-            lst = list(value_1)
-            for url in lst:
-                data_for_xml.append({'url': {'loc': url}})
+            for value_2 in value_1.values():
+                lst = list(value_2)
+                for url in lst:
+                    data_for_xml.append({'url': {'loc': url}})
 
     xml_data = json2xml.Json2xml(data_for_xml, wrapper='urlset', pretty=True, attr_type=False).to_xml()
     print(data_for_xml)
